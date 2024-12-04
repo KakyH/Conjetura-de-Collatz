@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conjetura de Collatz</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+        }
+        h1 {
+            color: #4CAF50;
+        }
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+        canvas {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+        .tooltip {
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 5px;
+            border-radius: 5px;
+            font-size: 12px;
+            display: none;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <h1>Conjetura de Collatz</h1>
+    <p>Introduce un número entero positivo para calcular la secuencia de Collatz:</p>
+    <input type="number" id="inputNumber" min="1" placeholder="Escribe un número..." />
+    <button onclick="calculateCollatz()">Calcular</button>
+
+    <div id="output"></div>
+    <canvas id="collatzCanvas" width="600" height="400"></canvas>
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        function calculateCollatz() {
+            const inputNumber = document.getElementById("inputNumber").value;
+            if (inputNumber < 1 || isNaN(inputNumber)) {
+                alert("Por favor, introduce un número entero positivo.");
+                return;
+            }
+
+            // Lógica para calcular la secuencia de Collatz
+            let n = parseInt(inputNumber);
+            const sequence = [];
+            while (n !== 1) {
+                sequence.push(n);
+                n = n % 2 === 0 ? n / 2 : 3 * n + 1;
+            }
+            sequence.push(1);
+
+            // Mostrar la secuencia
+            const outputDiv = document.getElementById("output");
+            outputDiv.innerHTML = `
+                <h3>Secuencia de Collatz:</h3>
+                <p>${sequence.join(" → ")}</p>
+                <p><strong>Número de pasos:</strong> ${sequence.length - 1}</p>
+            `;
+
+            // Dibujar el gráfico
+            drawChart(sequence);
+        }
+
+        function drawChart(sequence) {
+            const canvas = document.getElementById("collatzCanvas");
+            const ctx = canvas.getContext("2d");
+            const tooltip = document.getElementById("tooltip");
+
+            // Limpiar el canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Configuración del gráfico
+            const padding = 20;
+            const width = canvas.width - 2 * padding;
+            const height = canvas.height - 2 * padding;
+            const maxValue = Math.max(...sequence);
+            const stepX = width / (sequence.length - 1);
+            const stepY = height / maxValue;
+
+            const points = [];
+
+            // Dibujar líneas
+            ctx.beginPath();
+            ctx.moveTo(padding, canvas.height - padding - sequence[0] * stepY);
+            for (let i = 1; i < sequence.length; i++) {
+                const x = padding + i * stepX;
+                const y = canvas.height - padding - sequence[i] * stepY;
+                points.push({ x, y, value: sequence[i] });
+                ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = "#4CAF50";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Dibujar puntos
+            for (let i = 0; i < points.length; i++) {
+                const { x, y } = points[i];
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = "#4CAF50";
+                ctx.fill();
+            }
+
+            // Evento para mostrar tooltip
+            canvas.addEventListener("mousemove", (event) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = event.clientX - rect.left;
+                const mouseY = event.clientY - rect.top;
+
+                // Buscar si el mouse está cerca de algún punto
+                let found = false;
+                for (let i = 0; i < points.length; i++) {
+                    const { x, y, value } = points[i];
+                    const distance = Math.sqrt(
+                        Math.pow(mouseX - x, 2) + Math.pow(mouseY - y, 2)
+                    );
+                    if (distance < 5) {
+                        tooltip.style.left = `${event.clientX + 10}px`;
+                        tooltip.style.top = `${event.clientY + 10}px`;
+                        tooltip.innerHTML = `Valor: ${value}`;
+                        tooltip.style.display = "block";
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    tooltip.style.display = "none";
+                }
+            });
+
+            // Ocultar tooltip al salir del canvas
+            canvas.addEventListener("mouseout", () => {
+                tooltip.style.display = "none";
+            });
+        }
+    </script>
+</body>
+</html>
+
+<!-- By KakyH/TTD -->
