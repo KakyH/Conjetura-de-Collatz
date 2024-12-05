@@ -1,203 +1,84 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Conjetura de Collatz</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            color: #333;
-            line-height: 1.6;
+<script>
+function drawChart(sequence) {
+    const canvas = document.getElementById("collatzCanvas");
+    const ctx = canvas.getContext("2d");
+    const tooltip = document.getElementById("tooltip");
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const padding = 20;
+    const width = canvas.width - 2 * padding;
+    const height = canvas.height - 2 * padding;
+    const maxValue = Math.max(...sequence);
+    const logMaxValue = Math.log(maxValue + 1); // Escalado logarítmico
+    const stepX = width / (sequence.length - 1);
+
+    const points = [];
+
+    // Dibujar línea y guardar puntos
+    ctx.beginPath();
+    for (let i = 0; i < sequence.length; i++) {
+        const x = padding + i * stepX;
+        const y =
+            canvas.height -
+            padding -
+            (Math.log(sequence[i] + 1) / logMaxValue) * height;
+        points.push({ x, y, value: sequence[i] });
+        if (i === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
         }
+    }
+    ctx.strokeStyle = "#4CAF50";
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
-        header {
-            background: linear-gradient(135deg, #4CAF50, #8BC34A);
-            color: #fff;
-            padding: 20px 10px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
+    // Dibujar puntos
+    for (let i = 0; i < points.length; i++) {
+        const { x, y } = points[i];
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#4CAF50";
+        ctx.fill();
+    }
 
-        header h1 {
-            margin: 0;
-            font-size: 2.5rem;
-            letter-spacing: 1px;
-        }
+    // Detectar puntos más cercanos al cursor
+    canvas.addEventListener("mousemove", (event) => {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
 
-        main {
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-        }
+        let found = false;
+        let closestPoint = null;
+        let minDistance = Infinity;
 
-        input[type="number"] {
-            width: calc(100% - 120px);
-            padding: 10px;
-            font-size: 1rem;
-            margin-right: 10px;
-            border: 2px solid #ccc;
-            border-radius: 5px;
-        }
+        // Encontrar el punto más cercano al cursor
+        for (let i = 0; i < points.length; i++) {
+            const { x, y, value } = points[i];
+            const distance = Math.sqrt(
+                Math.pow(mouseX - x, 2) + Math.pow(mouseY - y, 2)
+            );
 
-        button {
-            padding: 10px 20px;
-            font-size: 1rem;
-            color: #fff;
-            background-color: #4CAF50;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        button:hover {
-            background-color: #45a049;
-        }
-
-        #output {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        canvas {
-            display: block;
-            margin: 30px auto 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            background: #fff;
-        }
-
-        .tooltip {
-            position: absolute;
-            background-color: rgba(50, 50, 50, 0.9);
-            color: #fff;
-            padding: 5px 8px;
-            border-radius: 5px;
-            font-size: 12px;
-            display: none;
-            pointer-events: none;
-            z-index: 10;
-        }
-    </style>
-</head>
-<body>
-    <header>
-        <h1>Conjetura de Collatz</h1>
-    </header>
-    <main>
-        <p>Introduce un número entero positivo para calcular la secuencia de Collatz:</p>
-        <input type="number" id="inputNumber" min="1" placeholder="Escribe un número..." />
-        <button onclick="calculateCollatz()">Calcular</button>
-        <div id="output"></div>
-        <canvas id="collatzCanvas" width="600" height="400"></canvas>
-        <div class="tooltip" id="tooltip"></div>
-    </main>
-
-    <script>
-        function calculateCollatz() {
-            const inputNumber = document.getElementById("inputNumber").value;
-
-            if (inputNumber < 1 || isNaN(inputNumber)) {
-                alert("Por favor, introduce un número entero positivo.");
-                return;
+            if (distance < minDistance && distance < 15) { // Ajusta la tolerancia aquí
+                closestPoint = points[i];
+                minDistance = distance;
+                found = true;
             }
-
-            let n = parseInt(inputNumber);
-            const sequence = [];
-            while (n !== 1) {
-                sequence.push(n);
-                n = n % 2 === 0 ? n / 2 : 3 * n + 1;
-            }
-            sequence.push(1);
-
-            const outputDiv = document.getElementById("output");
-            outputDiv.innerHTML = `
-                <h3>Secuencia de Collatz:</h3>
-                <p>${sequence.join(" → ")}</p>
-                <p><strong>Número de pasos:</strong> ${sequence.length - 1}</p>
-            `;
-
-            drawChart(sequence);
         }
 
-        function drawChart(sequence) {
-            const canvas = document.getElementById("collatzCanvas");
-            const ctx = canvas.getContext("2d");
-            const tooltip = document.getElementById("tooltip");
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const padding = 20;
-            const width = canvas.width - 2 * padding;
-            const height = canvas.height - 2 * padding;
-            const maxValue = Math.max(...sequence);
-            const stepX = width / (sequence.length - 1);
-            const stepY = height / maxValue;
-
-            const points = [];
-
-            ctx.beginPath();
-            ctx.moveTo(padding, canvas.height - padding - sequence[0] * stepY);
-            for (let i = 0; i < sequence.length; i++) {
-                const x = padding + i * stepX;
-                const y = canvas.height - padding - sequence[i] * stepY;
-                points.push({ x, y, value: sequence[i] });
-                ctx.lineTo(x, y);
-            }
-            ctx.strokeStyle = "#4CAF50";
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            for (let i = 0; i < points.length; i++) {
-                const { x, y } = points[i];
-                ctx.beginPath();
-                ctx.arc(x, y, 4, 0, Math.PI * 2);
-                ctx.fillStyle = "#4CAF50";
-                ctx.fill();
-            }
-
-            canvas.addEventListener("mousemove", (event) => {
-                const rect = canvas.getBoundingClientRect();
-                const mouseX = event.clientX - rect.left;
-                const mouseY = event.clientY - rect.top;
-
-                let found = false;
-
-                for (let i = 0; i < points.length; i++) {
-                    const { x, y, value } = points[i];
-
-                    // Incrementar tolerancia para detectar puntos
-                    const distance = Math.sqrt(
-                        Math.pow(mouseX - x, 2) + Math.pow(mouseY - y, 2)
-                    );
-
-                    if (distance < 10) { // Aumentamos la tolerancia a 10 píxeles
-                        tooltip.style.left = `${event.clientX + 10}px`;
-                        tooltip.style.top = `${event.clientY + 10}px`;
-                        tooltip.innerHTML = `${value}`;
-                        tooltip.style.display = "block";
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (!found) {
-                    tooltip.style.display = "none";
-                }
-            });
-
-            canvas.addEventListener("mouseout", () => {
-                tooltip.style.display = "none";
-            });
+        if (found && closestPoint) {
+            tooltip.style.left = `${event.clientX + 10}px`;
+            tooltip.style.top = `${event.clientY + 10}px`;
+            tooltip.innerHTML = `${closestPoint.value}`;
+            tooltip.style.display = "block";
+        } else {
+            tooltip.style.display = "none";
         }
-    </script>
-</body>
-</html>
+    });
+
+    canvas.addEventListener("mouseout", () => {
+        tooltip.style.display = "none";
+    });
+}
+</script>
