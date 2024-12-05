@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Conjetura de Collatz</title>
     <style>
-        /* Estilos generales */
         body {
             font-family: 'Arial', sans-serif;
             margin: 0;
@@ -171,12 +170,16 @@
                 const mouseY = event.clientY - rect.top;
 
                 let found = false;
+
                 for (let i = 0; i < points.length; i++) {
                     const { x, y, value } = points[i];
+
+                    // Incrementar tolerancia para detectar puntos
                     const distance = Math.sqrt(
                         Math.pow(mouseX - x, 2) + Math.pow(mouseY - y, 2)
                     );
-                    if (distance < 5) {
+
+                    if (distance < 10) { // Aumentamos la tolerancia a 10 píxeles
                         tooltip.style.left = `${event.clientX + 10}px`;
                         tooltip.style.top = `${event.clientY + 10}px`;
                         tooltip.innerHTML = `${value}`;
